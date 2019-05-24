@@ -1,0 +1,78 @@
+﻿@page "/"
+@using UnityGB
+@using System.Threading;
+@using Microsoft.AspNetCore.Components
+@using Microsoft.JSInterop
+@using GBlazor.Extensions
+@inject IComponentContext ComponentContext
+@inject IJSRuntime JS
+
+@if (isRunning)
+{
+    <button class="btn btn-primary" disabled onclick="@StartEmulation">Running...</button>
+}
+else
+{
+    <button class="btn btn-primary" onclick="@StartEmulation">Start</button>
+}
+
+<canvas id="canvas" width="160" height="144" style="border:1px solid #d3d3d3;">
+    Your browser does not support the HTML5 canvas tag.
+</canvas>
+
+@functions
+{
+    Emulator emulator;
+    FastCanvas canvas;
+    bool isRunning = false;
+
+    public void StartEmulation()
+    {
+        if (isRunning) { return; }
+
+        canvas = new FastCanvas("canvas");
+        emulator = new Emulator();
+
+        var romData = Convert.FromBase64String("[PASTE YOUR ROM DATA AS A BASE64 STRING HERE]");
+        emulator.LoadRom(romData);
+        isRunning = true;
+
+        Run();
+    }
+
+    public async Task Run()
+    {
+        while (true)
+        {
+            this.StateHasChanged();
+            await Task.Delay(1);
+        }
+    }
+
+    protected override void OnAfterRender()
+    {
+        base.OnAfterRender();
+
+        if (canvas == null) { return; }
+
+        var pixels = emulator.RunNextStep();
+
+        if (pixels == null) { return; }
+
+        var imgData = new int[pixels.Length * 4];
+
+        for (var i = 0; i < pixels.Length; i++)
+        {
+            var j = i * 4;
+
+            imgData[j + 0] = (((byte)(pixels[i] >> 16))); //R
+            imgData[j + 1] = (((byte)(pixels[i] >> 8)));  //G
+            imgData[j + 2] = (((byte)(pixels[i] >> 0)));  //B
+            imgData[j + 3] = (((byte)(pixels[i] >> 24))); //A
+
+        }
+
+        canvas.DrawPixels(imgData);
+    }
+
+}
