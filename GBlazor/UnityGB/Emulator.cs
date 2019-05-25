@@ -21,25 +21,41 @@ namespace UnityGB
 		private Stopwatch stopwatch = new Stopwatch();
 		private X80 x80;
 		private double scanLineTicks;
-		private uint[] pixels = new uint[WIDTH * HEIGHT];
+		private int[] pixels = new int[WIDTH * HEIGHT * 4];
 		private Game game;
 
+        private void SetPixel(int address, uint color)
+        {
+            pixels[address*4 + 0] = (byte)(color >> 16); //R
+            pixels[address*4 + 1] = (byte)(color >> 8);  //G
+            pixels[address*4 + 2] = (byte)(color >> 0);  //B
+            pixels[address*4 + 3] = (byte)(color >> 24); //A
+        }
+
+        private uint GetPixel(int address)
+        {
+            return ((uint)(pixels[address*4 + 0]) << 16)
+                | ((uint)(pixels[address*4 + 1]) << 8)
+                | ((uint)(pixels[address*4 + 2]) << 0)
+                | ((uint)(pixels[address*4 + 3]) << 24);
+        }
+        
 		public Emulator(IVideoOutput video = null, IAudioOutput audio = null, ISaveMemory saveMemory = null) : base(video, audio, saveMemory)
 		{
-			for (int i = 0; i < pixels.Length; i++)
+			for (int i = 0; i < WIDTH * HEIGHT; i++)
 			{
-				pixels [i] = 0xFF000000;
+                SetPixel(i, 0xFF000000);
 			}
 
 			Video?.SetSize(WIDTH, HEIGHT);
 		}
 
-		public override uint[] RunNextStep()
+		public override int[] RunNextStep()
 		{
             if (stopwatch.ElapsedTicks > TICKS_PER_FRAME)
             {
                 UpdateModel(true);
-                Video?.SetPixels(pixels);
+                //Video?.SetPixels(pixels);
 
                 stopwatch.Reset();
                 stopwatch.Start();
@@ -147,7 +163,7 @@ namespace UnityGB
 							intensity = windowBuffer [y - windowY, x - windowX];
 						}
 
-						pixels [pixelIndex] = intensity;
+						SetPixel(pixelIndex, intensity);
 					}
 
 					if (x80.spritesDisplayed)
@@ -201,13 +217,13 @@ namespace UnityGB
 											{
 												if (spritePriority)
 												{
-													if (pixels [screenAddress] == 0xFFFFFFFF)
+													if (GetPixel(screenAddress) == 0xFFFFFFFF)
 													{
-														pixels [screenAddress] = color;
+														SetPixel(screenAddress, color);
 													}
 												} else
 												{
-													pixels [screenAddress] = color;
+													SetPixel(screenAddress, color);
 												}
 											}
 										}
@@ -233,14 +249,14 @@ namespace UnityGB
 											{
 												if (spritePriority)
 												{
-													if (pixels [screenAddress] == 0xFFFFFFFF)
+													if (GetPixel(screenAddress) == 0xFFFFFFFF)
 													{
-														pixels [screenAddress] = color;
-													}
+                                                        SetPixel(screenAddress, color);
+                                                    }
 												} else
 												{
-													pixels [screenAddress] = color;
-												}
+                                                    SetPixel(screenAddress, color);
+                                                }
 											}
 										}
 									}
@@ -284,14 +300,14 @@ namespace UnityGB
 										{
 											if (spritePriority)
 											{
-												if (pixels [screenAddress] == 0xFFFFFFFF)
+												if (GetPixel(screenAddress) == 0xFFFFFFFF)
 												{
-													pixels [screenAddress] = color;
-												}
+                                                    SetPixel(screenAddress, color);
+                                                }
 											} else
 											{
-												pixels [screenAddress] = color;
-											}
+                                                SetPixel(screenAddress, color);
+                                            }
 										}
 									}
 								}

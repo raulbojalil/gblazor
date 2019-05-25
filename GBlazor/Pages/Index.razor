@@ -7,14 +7,7 @@
 @inject IComponentContext ComponentContext
 @inject IJSRuntime JS
 
-@if (isRunning)
-{
-    <button class="btn btn-primary" disabled onclick="@StartEmulation">Running...</button>
-}
-else
-{
-    <button class="btn btn-primary" onclick="@StartEmulation">Start</button>
-}
+<Base64FileInput Accept=".gb" OnFileLoaded="@LoadRom" ButtonText="Load ROM..."></Base64FileInput>
 
 <canvas id="canvas" width="160" height="144" style="border:1px solid #d3d3d3;">
     Your browser does not support the HTML5 canvas tag.
@@ -22,31 +15,37 @@ else
 
 @functions
 {
-    Emulator emulator;
+    static Emulator emulator;
     FastCanvas canvas;
     bool isRunning = false;
 
-    public void StartEmulation()
+    public void LoadRom(string data)
     {
-        if (isRunning) { return; }
-
         canvas = new FastCanvas("canvas");
         emulator = new Emulator();
 
-        var romData = Convert.FromBase64String("[PASTE YOUR ROM DATA AS A BASE64 STRING HERE]");
+        var romData = Convert.FromBase64String(data);
+
         emulator.LoadRom(romData);
         isRunning = true;
 
-        Run();
+        Task.Run(async () =>
+        {
+            while (true)
+            {
+                this.StateHasChanged();
+                await Task.Delay(1);
+            }
+
+        });
     }
 
-    public async Task Run()
+
+    [JSInvokable]
+    public static async Task SetInput(string button, bool pressed)
     {
-        while (true)
-        {
-            this.StateHasChanged();
-            await Task.Delay(1);
-        }
+        Console.WriteLine($"{button} {(pressed ? "Pressed" : "Released")}");
+        emulator?.SetInput((EmulatorBase.Button)Enum.Parse(typeof(EmulatorBase.Button), button), pressed);
     }
 
     protected override void OnAfterRender()
@@ -59,20 +58,7 @@ else
 
         if (pixels == null) { return; }
 
-        var imgData = new int[pixels.Length * 4];
-
-        for (var i = 0; i < pixels.Length; i++)
-        {
-            var j = i * 4;
-
-            imgData[j + 0] = (((byte)(pixels[i] >> 16))); //R
-            imgData[j + 1] = (((byte)(pixels[i] >> 8)));  //G
-            imgData[j + 2] = (((byte)(pixels[i] >> 0)));  //B
-            imgData[j + 3] = (((byte)(pixels[i] >> 24))); //A
-
-        }
-
-        canvas.DrawPixels(imgData);
+        canvas.DrawPixels(pixels);
     }
 
 }

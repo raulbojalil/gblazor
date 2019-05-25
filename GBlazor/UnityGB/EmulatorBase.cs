@@ -43,7 +43,7 @@ namespace UnityGB
 
 		public abstract void LoadRom(byte[] data);
 
-		public abstract uint[] RunNextStep();
+		public abstract int[] RunNextStep();
 
 		public abstract void SetInput(Button button, bool pressed);
 	}

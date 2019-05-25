@@ -1,0 +1,31 @@
+﻿<input id="@fileId" accept="@Accept" type="file" style="display: none" onchange="(function (e) { var file = e.target.files[0]; if (!file) return; var reader = new FileReader(); reader.readAsDataURL(file); reader.onloadend = function () { DotNet.invokeMethodAsync('GBlazor', 'CallEvent', reader.result.substring(reader.result.indexOf(',') + 1)); }; })(event)" />
+@((MarkupString)browseFileDialogHtml)
+
+@functions {
+
+    string fileId = Guid.NewGuid().ToString();
+    string browseFileDialogHtml;
+    static EventCallback<string> eventCallback;
+
+    [Parameter]
+    private string ButtonText { get; set; }
+
+    [Parameter]
+    private string Accept { get; set; }
+
+    [Parameter]
+    private EventCallback<string> OnFileLoaded { get; set; }
+
+    [JSInvokable]
+    public static void CallEvent(string ev)
+    {
+        eventCallback.InvokeAsync(ev);
+    }
+
+    protected override async Task OnInitAsync()
+    {
+        eventCallback = OnFileLoaded;
+        browseFileDialogHtml = $"<input class=\"btn btn-primary\" type=\"button\" value=\"{ButtonText}\" onclick=\"document.getElementById('{fileId}').click()\" />";
+    }
+
+}
